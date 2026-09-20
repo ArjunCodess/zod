@@ -384,6 +384,17 @@ test("tuple with rest schema", () => {
   expectTypeOf<t1>().toEqualTypeOf<[string, number, ...boolean[]]>();
 });
 
+test("async tuple rest transforms keep their own write index", async () => {
+  const schema = z.tuple([z.string()]).rest(
+    z.string().transform(async (value) => {
+      await new Promise((resolve) => setTimeout(resolve, value === "b" ? 20 : 0));
+      return value.toUpperCase();
+    })
+  );
+
+  await expect(schema.parseAsync(["a", "b", "c"])).resolves.toEqual(["a", "B", "C"]);
+});
+
 test("sparse array input", () => {
   const schema = z.tuple([z.string(), z.number()]);
   expect(() => schema.parse(new Array(2))).toThrow();

@@ -3081,12 +3081,12 @@ export const $ZodTuple: core.$constructor<$ZodTuple> = /*@__PURE__*/ core.$const
           if (util.aborted(payload, seen)) break;
           seen = payload.issues.length;
         }
-        i++;
+        const index = ++i;
         const result = def.rest._zod.run({ value: el, issues: [] }, ctx);
         if (result instanceof Promise) {
-          proms.push(result.then((r) => handleTupleResult(r, payload, i)));
+          proms.push(result.then((r) => handleTupleResult(r, payload, index)));
         } else {
-          handleTupleResult(result, payload, i);
+          handleTupleResult(result, payload, index);
         }
       }
     }
