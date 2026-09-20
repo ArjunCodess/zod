@@ -241,7 +241,9 @@ export function processSchema<T extends schemas.$ZodType>(
   // custom method overrides default behavior
   const overrideSchema = schema._zod.toJSONSchema?.();
   if (overrideSchema) {
-    result.schema = overrideSchema as any;
+    // `_zod.toJSONSchema` may return a shared object; copying keeps later extracts
+    // from wiping constraints off another schema that received the same value.
+    result.schema = { ...(overrideSchema as JSONSchema.BaseSchema) };
   } else {
     const params = {
       ..._params,

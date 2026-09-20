@@ -3289,6 +3289,44 @@ test("large registry conversion performs linear map-scan work", () => {
   expect(foldedDouble.work).toBeLessThanOrEqual(folded.work * 2);
 });
 
+test("a large registry keeps format, length, and integer bounds on shared fields", () => {
+  const id = z.int().gte(-2147483648).lte(2147483647);
+  const email = z.email();
+  const uuid = z.uuid();
+  const name = z.string().min(2);
+  const registry = z.registry<{ id: string }>();
+
+  for (let i = 0; i < 200; i++) {
+    registry.add(
+      z.object({
+        id,
+        email,
+        uuid,
+        name,
+        uniqueId: z.int().gte(-2147483648).lte(2147483647),
+        uniqueEmail: z.email(),
+      }),
+      { id: `Type${i}` }
+    );
+  }
+
+  const { schemas } = z.toJSONSchema(registry);
+  const expectedInt = { type: "integer", minimum: -2147483648, maximum: 2147483647 };
+  const expectedEmail = { type: "string", format: "email" };
+  const expectedUuid = { type: "string", format: "uuid" };
+  const expectedName = { type: "string", minLength: 2 };
+
+  for (const key of Object.keys(schemas).filter((k) => k !== "__shared")) {
+    const properties = schemas[key]!.properties as Record<string, Record<string, unknown>>;
+    expect(properties.id).toMatchObject(expectedInt);
+    expect(properties.uniqueId).toMatchObject(expectedInt);
+    expect(properties.email).toMatchObject(expectedEmail);
+    expect(properties.uniqueEmail).toMatchObject(expectedEmail);
+    expect(properties.uuid).toMatchObject(expectedUuid);
+    expect(properties.name).toMatchObject(expectedName);
+  }
+});
+
 test("a registry of records with numeric keys performs linear map-scan work", () => {
   const count = 64;
   const convert = (size: number, key: (i: number) => z.core.$ZodType) => {
